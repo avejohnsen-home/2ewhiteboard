@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="no">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kalender</title>
+<title>Calendar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -24,7 +24,7 @@
   #flate { width: 100vw; height: 100vh; display: flex; flex-direction: column; padding: 1.4rem 1.4rem 1rem; gap: 1rem; transform-origin: top left; }
   body.roter #flate { width: 100vh; height: 100vw; transform: rotate(90deg) translateY(-100%); }
 
-  /* Topp */
+  /* Header */
   header { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-shrink: 0; padding-bottom: 0.8rem; border-bottom: 2px solid var(--tekst); }
   .tid { font-size: 3.4rem; font-weight: 700; line-height: 0.95; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
   .dato { font-size: 1.05rem; color: var(--dempet); margin-top: 0.35rem; }
@@ -32,8 +32,10 @@
   .forklaring span { display: inline-flex; align-items: center; gap: 0.45rem; }
   .forklaring i { width: 0.9rem; height: 0.9rem; border-radius: 0.2rem; display: inline-block; }
 
-  /* Liste */
-  main { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.25rem; overflow: hidden; padding: 0.15rem 0.7rem; margin: 0 -0.7rem; }
+  .innhold { flex: 1; min-height: 0; display: flex; gap: 1.1rem; }
+
+  /* Calendar list (left) */
+  main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 0.25rem; overflow: hidden; padding: 0.15rem 0.7rem; margin: 0 -0.7rem 0 -0.7rem; }
   .uke { display: flex; align-items: center; gap: 0.6rem; color: var(--dempet); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; margin-top: 0.5rem; }
   .uke:first-child { margin-top: 0; }
   .uke::after { content: ""; flex: 1; height: 1px; background: var(--linje); }
@@ -52,6 +54,20 @@
   .h .tittel { font-weight: 500; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
   .h .sted { opacity: 0.75; font-weight: 400; }
 
+  /* Standby (right) */
+  aside { width: 30%; flex-shrink: 0; background: var(--kort); border-radius: 0.7rem; padding: 1.1rem 1.1rem; display: flex; flex-direction: column; gap: 1rem; overflow: hidden; align-self: flex-start; max-height: 100%; }
+  aside h2 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; padding-bottom: 0.6rem; border-bottom: 2px solid var(--tekst); }
+  .sb-mnd h3 { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--dempet); margin-bottom: 0.45rem; }
+  .sb-rad { display: flex; align-items: baseline; gap: 0.7rem; font-size: 1rem; padding: 0.4rem 0.5rem; margin: 0 -0.5rem; border-radius: 0.35rem; }
+  .sb-rad + .sb-rad { border-top: 1px solid var(--linje); }
+  .sb-rad .d { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 3.4rem; }
+  .sb-rad .n { font-weight: 500; overflow-wrap: anywhere; }
+  .sb-rad.forbi { opacity: 0.35; }
+  .sb-rad.na { background: #111; color: #fff; border-top-color: transparent; }
+  .sb-rad.na + .sb-rad { border-top-color: transparent; }
+  .sb-rad .merke { margin-left: auto; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; background: var(--aksent); color: #fff; padding: 0.1rem 0.4rem; border-radius: 0.3rem; align-self: center; }
+  .sb-tom { color: var(--dempet); font-size: 0.85rem; }
+
   .status { position: fixed; right: 0.6rem; bottom: 0.25rem; font-size: 0.5rem; color: var(--dempet); }
   .status.feil { color: var(--aksent); font-size: 0.7rem; }
 
@@ -69,28 +85,33 @@
     </div>
     <div class="forklaring" id="forklaring"></div>
   </header>
-  <main id="liste"></main>
+  <div class="innhold">
+    <main id="liste"></main>
+    <aside id="standby"></aside>
+  </div>
 </div>
 <div class="status" id="status"></div>
 
 <script>
 (function () {
-  const OPPDATER_SEK = 30;   // hvor ofte kalenderen hentes
+  const OPPDATER_SEK = 30;   // how often the calendar is fetched
   const TZ = 'Europe/Oslo';
 
-  // Fast farge per kalender (navnet må være likt som i Google Kalender)
+  // Fixed colour per calendar (name must match Google Calendar)
   const FARGER = {
     'Office': '#111111',
     'Fantasy': '#1f5fd1',
     'Family Entertainment': '#1f8a4c',
     'GoNordic': '#d1352b'
   };
-  const VISNINGSNAVN = { 'Family Entertainment': 'Familieunderholdningen' };
+  // Standby: events in this calendar whose title starts with "Standby"
+  const STANDBY_KALENDER = 'Office';
+  const STANDBY_MONSTER = /^\s*standby\b/i;
 
-  const UKEDAG = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'];
-  const MND = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
+  const UKEDAG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const MND = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-  // ---- Innstillinger fra adressen (huskes lokalt) ----
+  // ---- Settings from the URL (remembered locally) ----
   const p = new URLSearchParams(location.search);
   function lagre(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   function hent(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -103,7 +124,7 @@
   const $ = (s) => document.getElementById(s);
   let data = null;
 
-  // ---- Datohjelpere ----
+  // ---- Date helpers ----
   function d2s(d) { return d.toISOString().slice(0, 10); }
   function s2d(s) { return new Date(s + 'T12:00:00Z'); }
   function pluss(s, n) { const d = s2d(s); d.setUTCDate(d.getUTCDate() + n); return d2s(d); }
@@ -118,27 +139,31 @@
     const o = {}; f.formatToParts(new Date()).forEach(x => o[x.type] = x.value);
     return { dato: `${o.year}-${o.month}-${o.day}`, tid: `${o.hour}:${o.minute}` };
   }
-  function dagtekst(s) { const d = s2d(s); return `${UKEDAG[d.getUTCDay()]} ${d.getUTCDate()}. ${MND[d.getUTCMonth()]}`; }
+  function dagtekst(s) { const d = s2d(s); return `${UKEDAG[d.getUTCDay()]} ${d.getUTCDate()} ${MND[d.getUTCMonth()]}`; }
+  function mndNokkel(s) { return s.slice(0, 7); }
+  function nesteMnd(k) { let [a, m] = k.split('-').map(Number); m++; if (m > 12) { m = 1; a++; } return `${a}-${String(m).padStart(2, '0')}`; }
 
-  // ---- Klokke ----
+  // ---- Clock ----
   function tikk() {
     const n = osloNa();
     $('tid').textContent = n.tid;
-    $('dato').textContent = dagtekst(n.dato) + ' · uke ' + ukenr(n.dato);
+    $('dato').textContent = dagtekst(n.dato) + ' · Week ' + ukenr(n.dato);
     if (data && n.dato !== data.idag) { data.idag = n.dato; tegn(); if (mandag(n.dato) !== data.ukestart) hentData(); }
   }
 
-  // ---- Tegning ----
+  // ---- Rendering ----
   function kalNavn(i) { return (data.kalendere[i] || {}).navn || ''; }
   function farge(i) { return FARGER[kalNavn(i)] || '#555'; }
+  function erStandby(h) { return kalNavn(h.kal) === STANDBY_KALENDER && STANDBY_MONSTER.test(h.tittel); }
 
   function tegn() {
     if (!data) return;
     const idag = data.idag, start = mandag(idag), slutt = pluss(start, 27);
 
-    // Hendelser per dag
+    // Events per day (standby events are left out here)
     const perDag = {};
     data.hendelser.forEach(h => {
+      if (erStandby(h)) return;
       let s = h.fraDato < start ? start : h.fraDato;
       const t = h.tilDato > slutt ? slutt : h.tilDato;
       while (s <= t) {
@@ -147,15 +172,15 @@
       }
     });
 
-    // Forklaring
+    // Legend
     $('forklaring').innerHTML = data.kalendere.map((k, i) =>
-      `<span><i style="background:${farge(i)}"></i>${esc(VISNINGSNAVN[k.navn] || k.navn)}</span>`).join('');
+      `<span><i style="background:${farge(i)}"></i>${esc(k.navn)}</span>`).join('');
 
-    // Dager
+    // Days
     let html = '';
     for (let n = 0; n < 28; n++) {
       const dag = pluss(start, n);
-      if (n % 7 === 0) html += `<div class="uke">Uke ${ukenr(dag)}</div>`;
+      if (n % 7 === 0) html += `<div class="uke">Week ${ukenr(dag)}</div>`;
       const liste = (perDag[dag] || []).sort(sorter);
       const wd = s2d(dag).getUTCDay();
       const kl = ['dag'];
@@ -163,10 +188,69 @@
       if (wd === 0 || wd === 6) kl.push('helg');
       if (dag < idag) kl.push('forbi');
       if (dag === idag) kl.push('idag');
-      html += `<div class="${kl.join(' ')}"><div class="navn">${dagtekst(dag)}${dag === idag ? '<small>I dag</small>' : ''}</div>${liste.map(hendelse).join('')}</div>`;
+      html += `<div class="${kl.join(' ')}"><div class="navn">${dagtekst(dag)}${dag === idag ? '<small>Today</small>' : ''}</div>${liste.map(hendelse).join('')}</div>`;
     }
     $('liste').innerHTML = html;
+    tegnStandby();
     tilpass();
+  }
+
+  // ---- Standby panel ----
+  function standbyListe() {
+    // From the script (two months). Fallback: standby events within the 4 weeks.
+    if (Array.isArray(data.standby)) return data.standby.slice();
+    return data.hendelser.filter(erStandby).map(h => ({
+      navn: h.tittel.replace(STANDBY_MONSTER, '').replace(/^[\s\-–—:]+/, '').trim(),
+      fraDato: h.fraDato, tilDato: h.tilDato
+    }));
+  }
+
+  function tegnStandby() {
+    const idag = data.idag;
+    const m1 = mndNokkel(idag), m2 = nesteMnd(m1);
+
+    // Merge back-to-back days for the same person (e.g. separate Sat + Sun events)
+    const liste = standbyListe().sort((a, b) => a.fraDato.localeCompare(b.fraDato));
+    const slatt = [];
+    liste.forEach(s => {
+      const f = slatt[slatt.length - 1];
+      if (f && f.navn.toLowerCase() === s.navn.toLowerCase() && s.fraDato <= pluss(f.tilDato, 1)) {
+        if (s.tilDato > f.tilDato) f.tilDato = s.tilDato;
+      } else slatt.push({ ...s });
+    });
+
+    const grupper = { [m1]: [], [m2]: [] };
+    slatt.forEach(s => {
+      let k = mndNokkel(s.fraDato);
+      if (k < m1 && s.tilDato >= m1 + '-01') k = m1;
+      if (grupper[k]) grupper[k].push(s);
+    });
+
+    const forsteKommende = slatt.find(s => s.tilDato >= idag);
+    let html = '<h2>Standby</h2>';
+    [m1, m2].forEach(k => {
+      const mndNavn = MND[Number(k.slice(5, 7)) - 1];
+      html += `<div class="sb-mnd"><h3>${mndNavn}</h3>`;
+      if (!grupper[k].length) html += '<div class="sb-tom">No standby registered</div>';
+      grupper[k].forEach(s => {
+        const kl = ['sb-rad'];
+        let merke = '';
+        if (s.tilDato < idag) kl.push('forbi');
+        else if (s.fraDato <= idag) { kl.push('na'); merke = '<span class="merke">Now</span>'; }
+        else if (s === forsteKommende) merke = '<span class="merke">Next</span>';
+        html += `<div class="${kl.join(' ')}"><span class="d">${dagerTekst(s)}</span><span class="n">${esc(s.navn || '?')}</span>${merke}</div>`;
+      });
+      html += '</div>';
+    });
+    $('standby').innerHTML = html;
+  }
+
+  // "7/8", "31/1", or "6–8" for longer periods
+  function dagerTekst(s) {
+    const dager = [];
+    for (let d = s.fraDato; d <= s.tilDato && dager.length < 32; d = pluss(d, 1)) dager.push(s2d(d).getUTCDate());
+    if (dager.length <= 2) return dager.join('/');
+    return `${dager[0]}–${dager[dager.length - 1]}`;
   }
 
   function sorterTid(h) { return h.heldag ? '00:00' : (h.forste ? h.fraTid : '00:00'); }
@@ -175,11 +259,11 @@
     return sorterTid(a).localeCompare(sorterTid(b)) || a.tittel.localeCompare(b.tittel);
   }
   function klokkeslett(h) {
-    if (h.heldag) return 'Hele dagen';
+    if (h.heldag) return 'All day';
     if (h.forste && h.siste) return `${h.fraTid}–${h.tilTid}`;
-    if (h.forste) return `fra ${h.fraTid}`;
-    if (h.siste) return `til ${h.tilTid}`;
-    return 'Hele dagen';
+    if (h.forste) return `from ${h.fraTid}`;
+    if (h.siste) return `until ${h.tilTid}`;
+    return 'All day';
   }
   function hendelse(h) {
     const sted = h.sted ? ` <span class="sted">· ${esc(h.sted)}</span>` : '';
@@ -187,17 +271,17 @@
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
-  // Skaler teksten slik at alle 4 ukene alltid får plass på skjermen
+  // Scale the text so all 4 weeks always fit on screen
   function tilpass() {
-    const el = $('liste'), root = document.documentElement;
-    const flate = $('flate');
-    const bredde = flate.offsetWidth;
-    let fs = Math.min(30, bredde / 36);
+    const el = $('liste'), sb = $('standby'), root = document.documentElement;
+    let fs = Math.min(30, $('flate').offsetWidth / 36);
     root.style.fontSize = fs + 'px';
-    while (el.scrollHeight > el.clientHeight + 1 && fs > 10) { fs -= 0.5; root.style.fontSize = fs + 'px'; }
+    while ((el.scrollHeight > el.clientHeight + 1 || sb.scrollHeight > sb.clientHeight + 1) && fs > 10) {
+      fs -= 0.5; root.style.fontSize = fs + 'px';
+    }
   }
 
-  // ---- Henting ----
+  // ---- Fetching ----
   async function hentData() {
     try {
       if (demo) data = demoData();
@@ -211,10 +295,10 @@
       data.idag = osloNa().dato;
       tegn();
       $('status').className = 'status';
-      $('status').textContent = 'Oppdatert ' + osloNa().tid;
+      $('status').textContent = 'Updated ' + osloNa().tid;
     } catch (e) {
       $('status').className = 'status feil';
-      $('status').textContent = 'Får ikke kontakt med kalenderen – prøver igjen' + (data ? ' (viser sist kjente)' : '');
+      $('status').textContent = "Can't reach the calendar – retrying" + (data ? ' (showing last known data)' : '');
       console.warn(e);
     }
   }
@@ -224,20 +308,23 @@
     const kal = [{ navn: 'Office' }, { navn: 'Fantasy' }, { navn: 'Family Entertainment' }, { navn: 'GoNordic' }];
     const H = (d, k, t, fra, til, hel, dager) => ({ tittel: t, sted: '', kal: k, heldag: !!hel,
       fraDato: pluss(m, d), fraTid: hel ? '' : fra, tilDato: pluss(m, d + (dager || 0)), tilTid: hel ? '' : til });
-    return { ukestart: m, kalendere: kal, hendelser: [
-      H(1, 0, 'Tirsdagsmøte', '14:00', '15:00'), H(2, 0, 'Prep Color Line Tenter Meeting', '14:00', '19:00'),
-      H(3, 1, 'Evening Show – prøve', '10:00', '13:00'), H(4, 2, 'Høstferie Color Hybrid', '', '', true, 2),
-      H(4, 3, 'Møte Adrian', '09:00', '10:00'), H(8, 0, 'Budsjett', '09:00', '11:00'), H(8, 1, 'Fantasy kveldsshow', '19:30', '22:00'),
-      H(10, 2, 'Påmønstring Hybrid', '07:30', '08:30'), H(15, 3, 'Nordic Crown – befaring', '12:00', '15:00'),
-      H(18, 0, 'Teammøte', '10:00', '11:00'), H(23, 2, 'Juleshow-prøver', '10:00', '16:00'), H(25, 1, 'Julebord', '19:00', '23:30')
+    const navn = ['Robin', 'Adrian', 'Ave'];
+    const standby = [];
+    for (let w = -4; w < 10; w++) standby.push({ navn: navn[(w + 12) % 3], fraDato: pluss(m, w * 7 + 5), tilDato: pluss(m, w * 7 + 6) });
+    return { ukestart: m, kalendere: kal, standby, hendelser: [
+      H(1, 0, 'Tuesday meeting', '14:00', '15:00'), H(2, 0, 'Prep Color Line Tender Meeting', '14:00', '19:00'),
+      H(3, 1, 'Evening Show – rehearsal', '10:00', '13:00'), H(4, 2, 'Autumn break Color Hybrid', '', '', true, 2),
+      H(4, 3, 'Meeting Adrian', '09:00', '10:00'), H(8, 0, 'Budget', '09:00', '11:00'), H(8, 1, 'Fantasy evening show', '19:30', '22:00'),
+      H(10, 2, 'Sign-on Hybrid', '07:30', '08:30'), H(15, 3, 'Nordic Crown – site visit', '12:00', '15:00'),
+      H(18, 0, 'Team meeting', '10:00', '11:00'), H(23, 2, 'Christmas show rehearsals', '10:00', '16:00'), H(25, 1, 'Christmas party', '19:00', '23:30')
     ] };
   }
 
   // ---- Start ----
   if (!demo && (!id || !key)) {
-    $('flate').innerHTML = `<div class="oppsett"><h1>Kalender – oppsett</h1>
-      <p>Åpne siden med <code>?id=IMPLEMENTERINGS-ID&amp;key=NØKKEL</code></p>
-      <p>Bare se hvordan det ser ut: <code>?demo</code></p></div>`;
+    $('flate').innerHTML = `<div class="oppsett"><h1>Calendar – setup</h1>
+      <p>Open this page with <code>?id=DEPLOYMENT-ID&amp;key=KEY</code></p>
+      <p>Just want a preview? Add <code>?demo</code></p></div>`;
     return;
   }
   tikk(); setInterval(tikk, 1000);
