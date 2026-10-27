@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kalender</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-helg: #1b1f27;
+    --linje: #262b35;
+    --tekst: #e8eaf0;
+    --dempet: #8a92a3;
+    --aksent: #ff6b4a;
+    --gap: 0.35vw;
+    --fs: 1.05vw;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--tekst); overflow: hidden; }
+  body {
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: var(--fs);
+    display: flex; flex-direction: column;
+    padding: 1.2vw 1.4vw 1vw;
+    gap: 0.8vw;
+    cursor: none;
+  }
+
+  /* Topp */
+  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 2vw; }
+  .tittel .periode { font-size: 2.1vw; font-weight: 700; letter-spacing: -0.02em; }
+  .tittel .uker { color: var(--dempet); font-size: 1.05vw; margin-top: 0.2vw; }
+  .forklaring { display: flex; flex-wrap: wrap; gap: 0.5vw 1.4vw; justify-content: center; flex: 1; padding-bottom: 0.3vw; }
+  .forklaring span { display: inline-flex; align-items: center; gap: 0.45vw; color: var(--dempet); font-size: 0.95vw; }
+  .forklaring i { width: 0.75vw; height: 0.75vw; border-radius: 50%; display: inline-block; }
+  .klokke { text-align: right; }
+  .klokke .tid { font-size: 3vw; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .klokke .dato { color: var(--dempet); font-size: 1.05vw; margin-top: 0.3vw; }
+
+  /* Rutenett */
+  .kalender { flex: 1; display: grid; grid-template-columns: 2.6vw repeat(7, 1fr); grid-template-rows: auto repeat(4, 1fr); gap: var(--gap); min-height: 0; }
+  .dagnavn { color: var(--dempet); font-size: 0.9vw; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; padding: 0 0.5vw 0.2vw; }
+  .ukenr { color: var(--dempet); font-size: 0.85vw; font-weight: 600; display: flex; align-items: flex-start; justify-content: center; padding-top: 0.55vw; writing-mode: horizontal-tb; }
+  .dag { background: var(--panel); border-radius: 0.5vw; padding: 0.45vw 0.5vw; display: flex; flex-direction: column; gap: 0.25vw; min-height: 0; overflow: hidden; position: relative; }
+  .dag.helg { background: var(--panel-helg); }
+  .dag.forbi { opacity: 0.38; }
+  .dag.idag { outline: 0.18vw solid var(--aksent); outline-offset: -0.18vw; }
+  .dag .nr { font-weight: 600; font-size: 1.1vw; display: flex; align-items: baseline; gap: 0.4vw; }
+  .dag .nr small { color: var(--dempet); font-weight: 500; font-size: 0.8vw; text-transform: uppercase; letter-spacing: 0.05em; }
+  .dag.idag .nr b { background: var(--aksent); color: #fff; border-radius: 1vw; padding: 0 0.45vw; }
+  .liste { display: flex; flex-direction: column; gap: 0.22vw; min-height: 0; flex: 1; overflow: hidden; }
+
+  .h { display: flex; align-items: baseline; gap: 0.4vw; line-height: 1.25; white-space: nowrap; overflow: hidden; flex-shrink: 0; }
+  .h .tid { color: var(--dempet); font-variant-numeric: tabular-nums; font-size: 0.9vw; flex-shrink: 0; }
+  .h .navn { overflow: hidden; white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
+  .h:not(.heldag) { align-items: flex-start; }
+  .h:not(.heldag) .tid { margin-top: 0.1vw; }
+  .h i.prikk { align-self: flex-start; margin-top: 0.38vw; }
+  .h .prikk { width: 0.55vw; height: 0.55vw; border-radius: 50%; flex-shrink: 0; align-self: center; }
+  .h.heldag { border-radius: 0.3vw; padding: 0.1vw 0.4vw; color: #fff; font-weight: 500; }
+  .h.heldag .navn { text-shadow: 0 1px 1px rgba(0,0,0,0.25); }
+  .h.heldag.lys { color: #14161b; }
+  .h.heldag.lys .navn { text-shadow: none; }
+  .mer { color: var(--dempet); font-size: 0.85vw; flex-shrink: 0; }
+
+  .status { position: fixed; right: 1.4vw; bottom: 0.3vw; font-size: 0.7vw; color: var(--dempet); opacity: 0.6; }
+  .status.feil { color: var(--aksent); opacity: 1; }
+
+  /* Oppsett */
+  .oppsett { margin: auto; max-width: 46vw; line-height: 1.6; font-size: 1.1vw; }
+  .oppsett h1 { font-size: 2vw; margin-bottom: 1vw; }
+  .oppsett code { background: var(--panel); padding: 0.1vw 0.4vw; border-radius: 0.3vw; }
+</style>
+</head>
+<body>
+<header>
+  <div class="tittel">
+    <div class="periode" id="periode">&nbsp;</div>
+    <div class="uker" id="uker">&nbsp;</div>
+  </div>
+  <div class="forklaring" id="forklaring"></div>
+  <div class="klokke">
+    <div class="tid" id="tid">--:--</div>
+    <div class="dato" id="dato">&nbsp;</div>
+  </div>
+</header>
+<main class="kalender" id="kalender"></main>
+<div class="status" id="status"></div>
+
+<script>
+(function () {
+  const OPPDATER_SEK = 30;          // hvor ofte kalenderen hentes
+  const TZ = 'Europe/Oslo';
+  const DAGER = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
+  const MND = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des'];
+  const MND_LANG = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
+
+  // ---- Innstillinger fra adressen (lagres lokalt så adressen kan forkortes senere) ----
+  const p = new URLSearchParams(location.search);
+  function lagre(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function hent(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  let id = p.get('id'), key = p.get('key');
+  if (id && key) { lagre('kal_id', id); lagre('kal_key', key); }
+  else { id = hent('kal_id'); key = hent('kal_key'); }
+  const demo = p.has('demo');
+
+  const $ = (s) => document.getElementById(s);
+  let data = null;
+
+  // ---- Datohjelpere (rene datostrenger, ingen tidssone-overraskelser) ----
+  function d2s(d) { return d.toISOString().slice(0, 10); }
+  function s2d(s) { return new Date(s + 'T12:00:00Z'); }
+  function pluss(s, n) { const d = s2d(s); d.setUTCDate(d.getUTCDate() + n); return d2s(d); }
+  function ukenr(s) {
+    const d = s2d(s); const dag = (d.getUTCDay() + 6) % 7;
+    d.setUTCDate(d.getUTCDate() - dag + 3);
+    const forste = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+    return 1 + Math.round(((d - forste) / 864e5 - 3 + ((forste.getUTCDay() + 6) % 7)) / 7);
+  }
+  function osloNa() {
+    const f = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', weekday: 'short' });
+    const o = {}; f.formatToParts(new Date()).forEach(x => o[x.type] = x.value);
+    return { dato: `${o.year}-${o.month}-${o.day}`, tid: `${o.hour}:${o.minute}` };
+  }
+  function mandag(s) { const d = s2d(s); return pluss(s, -((d.getUTCDay() + 6) % 7)); }
+
+  // ---- Klokke ----
+  function tikk() {
+    const n = osloNa();
+    $('tid').textContent = n.tid;
+    const d = s2d(n.dato);
+    const ukedag = ['søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag'][d.getUTCDay()];
+    $('dato').textContent = `${ukedag} ${d.getUTCDate()}. ${MND_LANG[d.getUTCMonth()]}`;
+    // Ny dag? Tegn på nytt med en gang (uka ruller over natt til mandag)
+    if (data && n.dato !== data.idag) { data.idag = n.dato; if (data.ukestart !== mandag(n.dato)) hentData(); else tegn(); }
+  }
+
+  // ---- Tegning ----
+  function tegn() {
+    if (!data) return;
+    const idag = data.idag;
+    const start = mandag(idag);
+    const uker = 4;
+    const slutt = pluss(start, uker * 7 - 1);
+
+    // Topp
+    const a = s2d(start), b = s2d(slutt);
+    $('periode').textContent = a.getUTCMonth() === b.getUTCMonth()
+      ? `${MND_LANG[a.getUTCMonth()]} ${a.getUTCFullYear()}`
+      : `${MND_LANG[a.getUTCMonth()]} – ${MND_LANG[b.getUTCMonth()]} ${b.getUTCFullYear()}`;
+    $('periode').textContent = $('periode').textContent.charAt(0).toUpperCase() + $('periode').textContent.slice(1);
+    $('uker').textContent = `Uke ${ukenr(start)}–${ukenr(pluss(start, (uker - 1) * 7))}`;
+
+    // Hendelser per dag
+    const perDag = {};
+    const brukteKal = new Set();
+    data.hendelser.forEach(h => {
+      let s = h.fraDato < start ? start : h.fraDato;
+      const t = h.tilDato > slutt ? slutt : h.tilDato;
+      if (s > t) return;
+      brukteKal.add(h.kal);
+      while (s <= t) {
+        (perDag[s] = perDag[s] || []).push({ ...h, forste: s === h.fraDato, siste: s === h.tilDato });
+        s = pluss(s, 1);
+      }
+    });
+
+    // Forklaring: kun kalendere som har hendelser i perioden
+    $('forklaring').innerHTML = data.kalendere.map((k, i) => brukteKal.has(i)
+      ? `<span><i style="background:${k.farge}"></i>${esc(k.navn)}</span>` : '').join('');
+
+    // Rutenett
+    let html = '<div></div>' + DAGER.map(d => `<div class="dagnavn">${d}</div>`).join('');
+    for (let u = 0; u < uker; u++) {
+      const ukeStart = pluss(start, u * 7);
+      html += `<div class="ukenr">${ukenr(ukeStart)}</div>`;
+      for (let i = 0; i < 7; i++) {
+        const dag = pluss(ukeStart, i);
+        const d = s2d(dag);
+        const kl = ['dag'];
+        if (i >= 5) kl.push('helg');
+        if (dag < idag) kl.push('forbi');
+        if (dag === idag) kl.push('idag');
+        const visMnd = d.getUTCDate() === 1 || (u === 0 && i === 0);
+        const liste = (perDag[dag] || []).sort(sorter).map(hendelse).join('');
+        html += `<div class="${kl.join(' ')}"><div class="nr"><b>${d.getUTCDate()}</b>${visMnd ? `<small>${MND[d.getUTCMonth()]}</small>` : ''}</div><div class="liste">${liste}</div></div>`;
+      }
+    }
+    $('kalender').innerHTML = html;
+    kuttOverflyt();
+  }
+
+  function farge(h) { return h.farge || (data.kalendere[h.kal] || {}).farge || '#888'; }
+  function sorter(a, b) {
+    if (a.heldag !== b.heldag) return a.heldag ? -1 : 1;
+    const ta = a.forste ? a.fraTid : '00:00', tb = b.forste ? b.fraTid : '00:00';
+    return ta.localeCompare(tb) || a.tittel.localeCompare(b.tittel);
+  }
+  function hendelse(h) {
+    const f = farge(h);
+    if (h.heldag) return `<div class="h heldag${lys(f) ? ' lys' : ''}" style="background:${f}"><span class="navn">${esc(h.tittel)}</span></div>`;
+    let tid = h.forste ? h.fraTid : '→';
+    if (!h.forste && h.siste) tid = `→${h.tilTid}`;
+    return `<div class="h"><i class="prikk" style="background:${f}"></i><span class="tid">${tid}</span><span class="navn">${esc(h.tittel)}</span></div>`;
+  }
+  // Er fargen så lys at teksten bør være mørk?
+  function lys(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return false;
+    const n = parseInt(m[1], 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    return (0.299 * r + 0.587 * g + 0.114 * b) > 160;
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+  // Skjul hendelser som ikke får plass, og vis «+N til»
+  function kuttOverflyt() {
+    document.querySelectorAll('.liste').forEach(l => {
+      const barn = [...l.children];
+      if (!barn.length || l.scrollHeight <= l.clientHeight + 1) return;
+      const mer = document.createElement('div'); mer.className = 'mer'; l.appendChild(mer);
+      let skjult = 0;
+      for (let i = barn.length - 1; i >= 0 && l.scrollHeight > l.clientHeight + 1; i--) {
+        barn[i].style.display = 'none'; skjult++; mer.textContent = `+${skjult} til`;
+      }
+    });
+  }
+
+  // ---- Henting ----
+  async function hentData() {
+    try {
+      if (demo) { data = demoData(); }
+      else {
+        const url = `https://script.google.com/macros/s/${encodeURIComponent(id)}/exec?key=${encodeURIComponent(key)}&t=${Date.now()}`;
+        const r = await fetch(url, { cache: 'no-store' });
+        const j = await r.json();
+        if (j.feil) throw new Error(j.feil);
+        data = j;
+        data.idag = osloNa().dato;
+      }
+      tegn();
+      $('status').className = 'status';
+      $('status').textContent = 'Oppdatert ' + osloNa().tid;
+    } catch (e) {
+      $('status').className = 'status feil';
+      $('status').textContent = 'Får ikke kontakt med kalenderen – prøver igjen' + (data ? ' (viser sist kjente)' : '');
+      console.warn(e);
+    }
+  }
+
+  // ---- Demodata ----
+  function demoData() {
+    const idag = osloNa().dato, m = mandag(idag);
+    const kal = [
+      { navn: 'Familie', farge: '#4f8cff' }, { navn: 'Ave', farge: '#ff6b4a' },
+      { navn: 'Jobb', farge: '#33b679' }, { navn: 'Trening', farge: '#c27bff' }
+    ];
+    const H = (dag, kalI, tittel, fra, til, heldag, dager) => ({
+      tittel, sted: '', kal: kalI, farge: null, heldag: !!heldag,
+      fraDato: pluss(m, dag), fraTid: heldag ? '' : fra, tilDato: pluss(m, dag + (dager || 0)), tilTid: heldag ? '' : til
+    });
+    return {
+      idag, ukestart: m, uker: 4, kalendere: kal,
+      hendelser: [
+        H(0, 2, 'Planleggingsmøte', '09:00', '10:00'), H(0, 3, 'Svømming', '18:00', '19:00'),
+        H(1, 0, 'Middag hos mormor', '17:30', '20:00'), H(1, 1, 'Tannlege', '08:15', '09:00'),
+        H(2, 2, 'Color Hybrid – helg', '', '', true, 4), H(3, 3, 'Løpetur', '07:00', '08:00'),
+        H(4, 0, 'Fredagstaco', '18:00', '19:00'), H(5, 0, 'Bursdag Emma', '14:00', '17:00'),
+        H(6, 1, 'Kino', '19:30', '22:00'), H(8, 2, 'Kontordag', '08:00', '16:00'),
+        H(8, 0, 'Foreldremøte', '18:00', '19:30'), H(8, 3, 'Yoga', '20:00', '21:00'),
+        H(8, 1, 'Ring rørlegger', '12:00', '12:30'), H(8, 0, 'Henting barnehage', '16:00', '16:30'),
+        H(8, 2, 'Teams: budsjett', '13:00', '14:00'), H(8, 1, 'Pakke henting', '15:00', '15:15'),
+        H(8, 3, 'Stretch', '21:00', '21:30'), H(8, 0, 'Lesestund', '19:30', '20:00'),
+        H(11, 0, 'Høstferie hytta', '', '', true, 2), H(13, 1, 'Pub quiz', '20:00', '22:30'),
+        H(15, 2, 'Juleshow-prøver', '10:00', '15:00'), H(17, 3, 'Svømming', '18:00', '19:00'),
+        H(19, 0, 'Julebord', '19:00', '23:30'), H(22, 2, 'Teammøte', '09:00', '10:00'),
+        H(24, 1, 'Frisør', '11:00', '12:00'), H(26, 0, 'Adventslunsj', '12:00', '15:00')
+      ]
+    };
+  }
+
+  // ---- Start ----
+  if (!demo && (!id || !key)) {
+    document.body.innerHTML = `<div class="oppsett"><h1>Kalender – oppsett</h1>
+      <p>Åpne denne siden med adressen fra Apps Script:</p>
+      <p><code>?id=DISTRIBUSJONS-ID&amp;key=NØKKEL</code></p>
+      <p>Vil du bare se hvordan det ser ut? Legg til <code>?demo</code> i adressen.</p></div>`;
+    return;
+  }
+  tikk(); setInterval(tikk, 1000);
+  hentData(); setInterval(hentData, OPPDATER_SEK * 1000);
+  window.addEventListener('resize', tegn);
+  // Last siden helt på nytt kl. 04 hver natt (henter evt. nye versjoner)
+  setInterval(() => { if (osloNa().tid === '04:00') location.reload(); }, 60 * 1000);
+})();
+</script>
+</body>
+</html>
