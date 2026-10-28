@@ -37,6 +37,7 @@
   main { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
   .ukeskille { flex: 0 0 auto; font-family: var(--marker); font-size: 1rem; color: var(--teal); letter-spacing: 0.04em; padding: 0.7rem 0 0.1rem 0.15rem; border-bottom: 5px solid var(--strek); }
   .ukeskille:first-child { padding-top: 0; }
+  .ukeskille .mndnavn { display: block; font-size: 1.5rem; color: var(--tekst); letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.1; margin-bottom: 0.1rem; }
   .rad { flex: 1 1 auto; display: grid; grid-template-columns: 7.6rem 2.6rem minmax(0, 1fr) minmax(0, max-content); border-bottom: 2px solid var(--strek); min-height: 0; }
   .rad > div { padding: 0.15rem 0.4rem; min-width: 0; }
   .ukedag { font-family: var(--marker); font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.02em; display: flex; align-items: center; border-right: 2px solid var(--strek); }
@@ -208,7 +209,12 @@
       if (wd === 0 || wd === 6) kl.push('helg');
       if (dag < idag) kl.push('forbi');
       if (dag === idag) kl.push('idag');
-      if (n % 7 === 0) html += `<div class="ukeskille">Week ${ukenr(dag)}</div>`;
+      if (n % 7 === 0) {
+        // Month name above the week whose Monday starts a new month (and above the first week)
+        const nyMnd = n === 0 || mndNokkel(dag) !== mndNokkel(pluss(dag, -7));
+        const mndNavn = nyMnd ? `<span class="mndnavn">${MND[d.getUTCMonth()]}</span>` : '';
+        html += `<div class="ukeskille">${mndNavn}Week ${ukenr(dag)}</div>`;
+      }
       const uke = '';
       const mnd = (d.getUTCDate() === 1 || n === 0) ? `<span class="mnd">${MND_KORT[d.getUTCMonth()]}</span>` : '';
       html += `<div class="${kl.join(' ')}" data-dag="${dag}">
