@@ -45,7 +45,7 @@
   .nr .mnd { position: absolute; bottom: 0.05rem; right: 0.2rem; font-family: var(--hand); font-weight: 700; font-size: 0.5rem; color: var(--teal); }
   .nr .uke { position: absolute; top: 0.05rem; left: 0.2rem; font-family: var(--hand); font-weight: 700; font-size: 0.5rem; color: var(--teal); white-space: nowrap; }
   .innh { display: flex; flex-direction: column; justify-content: center; gap: 0.05rem; overflow: hidden; }
-  .side { display: flex; flex-direction: column; justify-content: center; align-items: flex-end; gap: 0.05rem; text-align: right; max-width: 7.5rem; }
+  .side { display: flex; flex-direction: column; justify-content: center; align-items: flex-end; gap: 0.25rem; text-align: right; max-width: 7.5rem; }
 
   .h { font-size: 0.92rem; line-height: 1.15; display: flex; gap: 0.6rem; }
   .h .kl { font-weight: 700; flex-shrink: 0; min-width: 2.5rem; }
@@ -123,7 +123,11 @@
   const STANDBY_KALENDER = 'Office';
   const STANDBY_MONSTER = /^\s*standby\b/i;
   // Out of office: events (any calendar) whose title starts with "Out of office"
-  const OOO_MONSTER = /^\s*out\s+of\s+(the\s+)?office\b/i;
+  // Shown next to the day (any calendar): title prefix → label written above the name
+  const SIDENOTATER = [
+    { monster: /^\s*out\s+of\s+(the\s+)?office\b/i, etikett: 'Out of Office' },
+    { monster: /^\s*home\s*office\b/i, etikett: 'Home Office' }
+  ];
 
   const UKEDAG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const MND = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -173,7 +177,8 @@
   function kalNavn(i) { return (data.kalendere[i] || {}).navn || ''; }
   function farge(i) { return FARGER[kalNavn(i)] || '#555'; }
   function erStandby(h) { return kalNavn(h.kal) === STANDBY_KALENDER && STANDBY_MONSTER.test(h.tittel); }
-  function erOOO(h) { return OOO_MONSTER.test(h.tittel); }
+  function sideType(h) { return SIDENOTATER.find(t => t.monster.test(h.tittel)); }
+  function erOOO(h) { return !!sideType(h); }
 
   function tegn() {
     if (!data) return;
@@ -235,8 +240,9 @@
   }
   // "Out of Office - Linda 10:30" → "Linda 10:30" (no calendar time shown)
   function oooTekst(h) {
-    const rest = utenPrefiks(h.tittel, OOO_MONSTER);
-    return `<div class="ooo" style="color:${farge(h.kal)}"><small>Out of Office</small><b>${esc(rest)}</b></div>`;
+    const type = sideType(h);
+    const rest = utenPrefiks(h.tittel, type.monster);
+    return `<div class="ooo" style="color:${farge(h.kal)}"><small>${type.etikett}</small><b>${esc(rest)}</b></div>`;
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
@@ -338,7 +344,7 @@
       H(14, 3, 'Rehearsal start 27 – Adrian Crown', '11:00', '15:00'), H(15, 0, 'Results meeting', '14:00', '15:00'),
       H(17, 0, 'Ave haircut', '', '', true), H(18, 0, 'Waffle Friday ♡', '12:00', '13:00'),
       H(20, 2, 'Fam. Ent. music draft', '', '', true), H(24, 0, 'Deadline salaries', '', '', true),
-      H(25, 0, 'Out of Office - LS office 10:30', '10:30', '16:00')
+      H(25, 0, 'Out of Office - LS office 10:30', '10:30', '16:00'), H(2, 0, 'Home Office - Robin', '', '', true), H(4, 2, 'Home Office - Adrian', '08:00', '16:00')
     ] };
   }
 
