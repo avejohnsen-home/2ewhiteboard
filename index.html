@@ -135,7 +135,8 @@
   // Shown next to the day (any calendar): title prefix → label written above the name
   const SIDENOTATER = [
     { monster: /^\s*out\s+of\s+(the\s+)?office\b/i, etikett: 'Out of Office' },
-    { monster: /^\s*home\s*office\b/i, etikett: 'Home Office' }
+    { monster: /^\s*home\s*office\b/i, etikett: 'Home Office' },
+    { monster: /^\s*off(?=\s*[-–—:]|\s*$)/i, etikett: 'Off' }   // "OFF - Linda" (not "Office…" or "Off-site…")
   ];
 
   const UKEDAG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -362,7 +363,7 @@
       H(14, 3, 'Rehearsal start 27 – Adrian Crown', '11:00', '15:00'), H(15, 0, 'Results meeting', '14:00', '15:00'),
       H(17, 0, 'Ave haircut', '', '', true), H(18, 0, 'Waffle Friday ♡', '12:00', '13:00'),
       H(20, 2, 'Fam. Ent. music draft', '', '', true), H(24, 0, 'Deadline salaries', '', '', true),
-      H(25, 0, 'Out of Office - LS office 10:30', '10:30', '16:00'), H(2, 0, 'Home Office - Robin', '', '', true), H(4, 2, 'Home Office - Adrian', '08:00', '16:00')
+      H(25, 0, 'Out of Office - LS office 10:30', '10:30', '16:00'), H(2, 0, 'Home Office - Robin', '', '', true), H(4, 2, 'Home Office - Adrian', '08:00', '16:00'), H(3, 0, 'OFF - Ave', '', '', true)
     ] };
   }
 
