@@ -410,7 +410,7 @@
   let pauseBilder = [], pauseTimer, byttTimer, byttTimer2, bildeNr = 0, lag = 0;
 
   function finnBilde(navn) {
-    return new Promise(ok => { const i = new Image(); i.onload = () => ok(navn); i.onerror = () => ok(null); i.src = navn + '?v=' + Math.floor(Date.now() / 36e5); });
+    return new Promise(ok => { const i = new Image(); i.onload = () => ok(navn); i.onerror = () => ok(null); i.src = navn + '?v=' + Math.floor(Date.now() / 3e5); });
   }
   async function lastPauseBilder() {
     const funnet = [];
@@ -425,7 +425,7 @@
     if (!pauseBilder.length) return;
     const lagene = document.querySelectorAll('#pause .bilde');
     lag = 1 - lag;
-    lagene[lag].style.backgroundImage = `url("${pauseBilder[bildeNr % pauseBilder.length]}?v=${Math.floor(Date.now() / 36e5)}")`;
+    lagene[lag].style.backgroundImage = `url("${pauseBilder[bildeNr % pauseBilder.length]}?v=${Math.floor(Date.now() / 3e5)}")`;
     lagene[lag].classList.add('aktiv');
     lagene[1 - lag].classList.remove('aktiv');
     bildeNr++;
