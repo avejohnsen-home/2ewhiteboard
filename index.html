@@ -34,7 +34,9 @@
            display: grid; grid-template-columns: 1fr 2.7rem 26%; padding: 0.6rem 0.6rem 0.6rem 0.7rem; position: relative; }
 
   /* ---------- Calendar (left) ---------- */
-  main { display: flex; flex-direction: column; min-height: 0; overflow: hidden; border-top: 2px solid var(--strek); }
+  main { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+  .ukeskille { flex: 0 0 auto; font-family: var(--marker); font-size: 1rem; color: var(--teal); letter-spacing: 0.04em; padding: 0.7rem 0 0.1rem 0.15rem; border-bottom: 5px solid var(--strek); }
+  .ukeskille:first-child { padding-top: 0; }
   .rad { flex: 1 1 auto; display: grid; grid-template-columns: 7.6rem 2.6rem minmax(0, 1fr) minmax(0, max-content); border-bottom: 2px solid var(--strek); min-height: 0; }
   .rad > div { padding: 0.15rem 0.4rem; min-width: 0; }
   .ukedag { font-family: var(--marker); font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.02em; display: flex; align-items: center; border-right: 2px solid var(--strek); }
@@ -50,8 +52,9 @@
   .h { gap: 0.45rem; }
   .h .t { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
   .h.heldag .t { font-weight: 700; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
-  .ooo { font-size: 0.85rem; line-height: 1.15; font-weight: 700; }
-  .ooo small { font-weight: 400; font-size: 0.65rem; opacity: 0.8; }
+  .ooo { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; }
+  .ooo small { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.8; }
+  .ooo b { font-size: 0.85rem; font-weight: 700; }
 
   .rad.forbi { opacity: 0.3; }
 
@@ -200,7 +203,8 @@
       if (wd === 0 || wd === 6) kl.push('helg');
       if (dag < idag) kl.push('forbi');
       if (dag === idag) kl.push('idag');
-      const uke = n % 7 === 0 ? `<span class="uke">Week ${ukenr(dag)}</span>` : '';
+      if (n % 7 === 0) html += `<div class="ukeskille">Week ${ukenr(dag)}</div>`;
+      const uke = '';
       const mnd = (d.getUTCDate() === 1 || n === 0) ? `<span class="mnd">${MND_KORT[d.getUTCMonth()]}</span>` : '';
       html += `<div class="${kl.join(' ')}" data-dag="${dag}">
         <div class="ukedag">${UKEDAG[wd]}</div>
@@ -232,7 +236,7 @@
   // "Out of Office - Linda 10:30" → "Linda 10:30" (no calendar time shown)
   function oooTekst(h) {
     const rest = utenPrefiks(h.tittel, OOO_MONSTER);
-    return `<div class="ooo" style="color:${farge(h.kal)}">${esc(rest || 'Out of office')} <small>OOO</small></div>`;
+    return `<div class="ooo" style="color:${farge(h.kal)}"><small>Out of Office</small><b>${esc(rest)}</b></div>`;
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
