@@ -26,6 +26,15 @@
   body { color: var(--tekst); font-family: var(--hand); }
   body.skjul-mus, body.skjul-mus * { cursor: none; }
 
+  /* Pause screen (screensaver) */
+  #pause { position: fixed; inset: 0; z-index: 50; background: #000; opacity: 0; visibility: hidden; transition: opacity 1.2s, visibility 0s linear 1.2s; overflow: hidden; }
+  #pause.vis { opacity: 1; visibility: visible; transition: opacity 1.2s; }
+  #pause .bilde { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 2s; }
+  #pause .bilde.aktiv { opacity: 1; }
+  #pause .pk { position: absolute; right: 4%; bottom: 3%; color: #fff; text-align: right; text-shadow: 0 2px 12px rgba(0,0,0,0.6); }
+  #pause .pk .t { font-family: var(--marker); font-size: 4.5rem; line-height: 1; }
+  #pause .pk .d { font-size: 1.1rem; opacity: 0.9; }
+
   /* Scroll mode: used when the window is wider than tall (e.g. a laptop browser) */
   html.rull, html.rull body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: auto; }
   html.rull #flate, html.rull .tavle { height: auto; }
@@ -113,6 +122,10 @@
       <path d="M4 28 L40 4 L40 17 L114 17 L114 39 L40 39 L40 52 Z" fill="#fff" stroke="#d93a2b" stroke-width="5" stroke-linejoin="round"/>
       <path d="M48 22 L106 22" stroke="#d93a2b" stroke-width="2" opacity="0.35"/>
     </svg>
+  </div>
+  <div id="pause" aria-hidden="true">
+    <div class="bilde"></div><div class="bilde"></div>
+    <div class="pk"><div class="t" id="pTid"></div><div class="d" id="pDato"></div></div>
   </div>
 </div>
 
@@ -386,6 +399,63 @@
   function visMus() { document.body.classList.remove('skjul-mus'); clearTimeout(musTimer); musTimer = setTimeout(() => document.body.classList.add('skjul-mus'), 3000); }
   ['mousemove', 'mousedown', 'wheel', 'touchstart'].forEach(e => window.addEventListener(e, visMus, { passive: true }));
   visMus();
+
+  // ---- Pause screen ----
+  // Shows your own pictures after PAUSE_SEK seconds without mouse/remote/keyboard activity.
+  // Put the pictures in the GitHub repo next to index.html, named pause1.jpg, pause2.jpg, pause3.jpg …
+  // (.png also works). Add or remove pictures any time – no code changes needed.
+  // ?pause=120 in the URL changes the delay, ?pause=0 turns the pause screen off.
+  const PAUSE_SEK = p.has('pause') ? Number(p.get('pause')) : 60;
+  const BYTT_BILDE_SEK = 20;   // time per picture when there are several
+  let pauseBilder = [], pauseTimer, byttTimer, byttTimer2, bildeNr = 0, lag = 0;
+
+  function finnBilde(navn) {
+    return new Promise(ok => { const i = new Image(); i.onload = () => ok(navn); i.onerror = () => ok(null); i.src = navn + '?v=' + Math.floor(Date.now() / 36e5); });
+  }
+  async function lastPauseBilder() {
+    const funnet = [];
+    for (let n = 1; n <= 30; n++) {
+      const b = (await finnBilde(`pause${n}.jpg`)) || (await finnBilde(`pause${n}.png`)) || (await finnBilde(`pause${n}.jpeg`));
+      if (!b) break;
+      funnet.push(b);
+    }
+    pauseBilder = funnet;
+  }
+  function visNesteBilde() {
+    if (!pauseBilder.length) return;
+    const lagene = document.querySelectorAll('#pause .bilde');
+    lag = 1 - lag;
+    lagene[lag].style.backgroundImage = `url("${pauseBilder[bildeNr % pauseBilder.length]}?v=${Math.floor(Date.now() / 36e5)}")`;
+    lagene[lag].classList.add('aktiv');
+    lagene[1 - lag].classList.remove('aktiv');
+    bildeNr++;
+  }
+  function oppdaterPauseKlokke() {
+    const n = osloNa(), d = s2d(n.dato);
+    $('pTid').textContent = n.tid;
+    $('pDato').textContent = `${UKEDAG[d.getUTCDay()]} ${d.getUTCDate()} ${MND[d.getUTCMonth()]}`;
+  }
+  function startPause() {
+    oppdaterPauseKlokke();
+    visNesteBilde();
+    $('pause').classList.add('vis');
+    clearInterval(byttTimer);
+    byttTimer = setInterval(() => { oppdaterPauseKlokke(); }, 10000);
+    if (pauseBilder.length > 1) byttTimer2 = setInterval(visNesteBilde, BYTT_BILDE_SEK * 1000);
+  }
+  function vekk() {
+    if ($('pause').classList.contains('vis')) {
+      $('pause').classList.remove('vis');
+      clearInterval(byttTimer); clearInterval(byttTimer2);
+      lastPauseBilder();   // pick up newly uploaded pictures
+    }
+    clearTimeout(pauseTimer);
+    if (PAUSE_SEK > 0) pauseTimer = setTimeout(startPause, PAUSE_SEK * 1000);
+  }
+  if (PAUSE_SEK > 0) {
+    ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart'].forEach(e => window.addEventListener(e, vekk, { passive: true }));
+    lastPauseBilder().then(vekk);
+  }
 
   tikk(); setInterval(tikk, 1000);
   hentData(); setInterval(hentData, OPPDATER_SEK * 1000);
