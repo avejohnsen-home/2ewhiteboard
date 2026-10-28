@@ -23,7 +23,15 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { font-size: 24px; }
   html, body { height: 100%; background: #e9e8e4; overflow: hidden; }
-  body { color: var(--tekst); font-family: var(--hand); cursor: none; }
+  body { color: var(--tekst); font-family: var(--hand); }
+  body.skjul-mus, body.skjul-mus * { cursor: none; }
+
+  /* Scroll mode: used when the window is wider than tall (e.g. a laptop browser) */
+  html.rull, html.rull body { height: auto; overflow: auto; }
+  html.rull #flate, html.rull .tavle { height: auto; }
+  html.rull main, html.rull aside { overflow: visible; }
+  html.rull .rad { flex: none; min-height: 2.6rem; }
+  html.rull aside { align-self: start; }
 
   #flate { width: 100vw; height: 100vh; padding: 0.7rem; transform-origin: top left; }
   body.roter #flate { width: 100vh; height: 100vw; transform: rotate(90deg) translateY(-100%); }
@@ -295,8 +303,12 @@
   function tilpass() {
     const el = $('liste'), root = document.documentElement;
     const aside = document.querySelector('aside');
-    let fs = Math.min(30, $('flate').offsetWidth / 40);
+    // A portrait screen (or ?roter=1) fits everything; a landscape window scrolls instead
+    const rull = window.innerWidth > window.innerHeight && !document.body.classList.contains('roter');
+    root.classList.toggle('rull', rull);
+    let fs = Math.min(rull ? 22 : 30, $('flate').offsetWidth / 40);
     root.style.fontSize = fs + 'px';
+    if (rull) { plasserPil(); return; }
     const forMye = () => el.scrollHeight > el.clientHeight + 1 || aside.scrollHeight > aside.clientHeight + 1 ||
       [...el.querySelectorAll('.innh, .side')].some(c => c.scrollHeight > c.clientHeight + 1);
     while (forMye() && fs > 9) { fs -= 0.5; root.style.fontSize = fs + 'px'; }
@@ -361,6 +373,12 @@
       <p>Just want a preview? Add <code>?demo</code></p></div>`;
     return;
   }
+  // Hide the mouse pointer after 3 s without movement; it comes back when moved
+  let musTimer;
+  function visMus() { document.body.classList.remove('skjul-mus'); clearTimeout(musTimer); musTimer = setTimeout(() => document.body.classList.add('skjul-mus'), 3000); }
+  ['mousemove', 'mousedown', 'wheel', 'touchstart'].forEach(e => window.addEventListener(e, visMus, { passive: true }));
+  visMus();
+
   tikk(); setInterval(tikk, 1000);
   hentData(); setInterval(hentData, OPPDATER_SEK * 1000);
   window.addEventListener('resize', tilpass);
