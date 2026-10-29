@@ -431,8 +431,8 @@
   // Shows your own pictures after PAUSE_SEK seconds without mouse/remote/keyboard activity.
   // Put the pictures in the GitHub repo next to index.html, named pause1.jpg, pause2.jpg, pause3.jpg …
   // (.png also works). Add or remove pictures any time – no code changes needed.
-  // ?pause=120 in the URL changes the delay, ?pause=0 turns the pause screen off.
-  const PAUSE_SEK = p.has('pause') ? Number(p.get('pause')) : 60;
+  // The pause screen is OFF by default. Add &pause=60 to the URL to turn it on (60 s delay).
+  const PAUSE_SEK = p.has('pause') ? Number(p.get('pause')) : 0;
   const BYTT_BILDE_SEK = 20;   // time per picture when there are several
   let pauseBilder = [], pauseTimer, byttTimer, byttTimer2, bildeNr = 0, lag = 0;
 
