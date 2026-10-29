@@ -96,6 +96,9 @@
   .sb-rad.na::after { content: "NOW"; position: absolute; right: 0.25rem; top: 0.2rem; font-family: var(--marker); font-size: 0.55rem; color: var(--rod); }
   .sb-tom { padding: 0.3rem; font-size: 0.75rem; color: var(--dempet); border-bottom: 2px solid var(--strek); }
 
+  .vk-liste { border-top: 2px solid var(--strek); border-left: 2px solid var(--strek); border-right: 2px solid var(--strek); }
+  .vk-rad { border-bottom: 2px solid var(--strek); padding: 0.3rem 0.4rem; font-size: 0.88rem; line-height: 1.2; overflow-wrap: anywhere; }
+  .vk-tom { padding: 0.3rem 0.4rem; font-size: 0.75rem; color: var(--dempet); border-bottom: 2px solid var(--strek); }
   .forklaring { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.75rem; }
   .forklaring span { display: flex; align-items: center; gap: 0.4rem; text-transform: uppercase; letter-spacing: 0.04em; }
   .forklaring i { width: 1.1rem; height: 0.5rem; border-radius: 0.1rem; display: inline-block; }
@@ -116,6 +119,7 @@
       <div class="klokke"><div class="tid" id="tid">--:--</div><div class="dato" id="dato">&nbsp;</div></div>
       <div class="sb" id="standby"></div>
       <div class="forklaring" id="forklaring"></div>
+      <div class="sb" id="viktig"></div>
       <div class="status" id="status"></div>
     </aside>
     <svg class="pil" id="pil" viewBox="0 0 120 56" aria-hidden="true">
@@ -144,6 +148,8 @@
   // Standby: events in this calendar whose title starts with "Standby"
   const STANDBY_KALENDER = 'Office';
   const STANDBY_MONSTER = /^\s*standby\b/i;
+  // Important dates: the description of the event called «Important dates»
+  const VIKTIG_MONSTER = /^\s*important\s+dates\s*$/i;
   // Out of office: events (any calendar) whose title starts with "Out of office"
   // Shown next to the day (any calendar): title prefix → label written above the name
   const SIDENOTATER = [
@@ -209,7 +215,7 @@
 
     const perDag = {};
     data.hendelser.forEach(h => {
-      if (erStandby(h)) return;
+      if (erStandby(h) || VIKTIG_MONSTER.test(h.tittel)) return;
       let s = h.fraDato < start ? start : h.fraDato;
       const t = h.tilDato > slutt ? slutt : h.tilDato;
       while (s <= t) {
@@ -248,6 +254,7 @@
     }
     $('liste').innerHTML = html;
     tegnStandby();
+    tegnViktig();
     tilpass();
   }
 
@@ -307,6 +314,26 @@
     };
     $('standby').innerHTML = `<h2>STAND BY</h2><div class="sb-tabell">${kol(m1)}${kol(m2)}</div>`;
   }
+  // ---- Important dates (text from the event description, one line per row) ----
+  function tegnViktig() {
+    const boks = $('viktig');
+    if (data.viktig === undefined) { boks.innerHTML = ''; return; }   // old script: hide the box
+    const linjer = tekstLinjer(data.viktig || '');
+    const rader = linjer.length
+      ? linjer.map(l => `<div class="vk-rad">${esc(l)}</div>`).join('')
+      : `<div class="vk-tom">${data.viktig === null ? 'Add an event called “Important dates”' : '—'}</div>`;
+    boks.innerHTML = `<h2>IMPORTANT DATES</h2><div class="vk-liste">${rader}</div>`;
+  }
+  // Google Calendar descriptions may contain simple HTML – turn it into plain lines
+  function tekstLinjer(html) {
+    const t = String(html)
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/(p|div|li|h[1-6]|tr)>/gi, '\n')
+      .replace(/<[^>]*>/g, '');
+    const ren = new DOMParser().parseFromString(t, 'text/html').documentElement.textContent || '';
+    return ren.split(/\r?\n/).map(l => l.replace(/^\s*[-•*·]\s*/, '').trim()).filter(Boolean);
+  }
+
   function dagerTekst(s) {
     const dager = [];
     for (let d = s.fraDato; d <= s.tilDato && dager.length < 32; d = pluss(d, 1)) dager.push(s2d(d).getUTCDate());
@@ -373,7 +400,7 @@
     const navn = ['Robin', 'Adrian', 'Ave', 'Linda'];
     const standby = [];
     for (let w = -4; w < 10; w++) standby.push({ navn: navn[(w + 12) % 4], fraDato: pluss(m, w * 7 + 5), tilDato: pluss(m, w * 7 + 6) });
-    return { ukestart: m, kalendere: kal, standby, hendelser: [
+    return { ukestart: m, kalendere: kal, standby, viktig: 'PREM 26/27 Jan<br>½ year meeting: 24/25 Nov<br>Sept 26 – Orders/deliveries', hendelser: [
       H(0, 0, '11:00 Marlene quit', '11:00', '12:00'), H(0, 0, 'Out of Office - Robin', '08:00', '16:00'),
       H(1, 0, 'Ingvild', '09:00', '10:00'), H(1, 3, 'Out of office - Adrian meeting TLK', '09:00', '15:00'),
       H(2, 0, 'Prep meeting', '10:00', '11:00'), H(3, 0, 'CL Tender meeting', '12:00', '14:00'),
