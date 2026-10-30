@@ -101,8 +101,6 @@
   .vk-liste { border-top: 2px solid var(--strek); border-left: 2px solid var(--strek); border-right: 2px solid var(--strek); }
   .vk-rad { border-bottom: 2px solid var(--strek); padding: 0.3rem 0.4rem; font-size: 0.88rem; line-height: 1.2; overflow-wrap: anywhere; }
   .vk-tom { padding: 0.3rem 0.4rem; font-size: 0.75rem; color: var(--dempet); border-bottom: 2px solid var(--strek); }
-  .vimeo { position: relative; width: 100%; aspect-ratio: 16 / 9; flex-shrink: 0; border: 2px solid var(--strek); background: #000; }
-  .vimeo iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
   .forklaring { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.75rem; }
   .forklaring span { display: flex; align-items: center; gap: 0.4rem; text-transform: uppercase; letter-spacing: 0.04em; }
   .forklaring i { width: 1.1rem; height: 0.5rem; border-radius: 0.1rem; display: inline-block; }
@@ -125,8 +123,6 @@
       <div class="sb" id="standby"></div>
       <div class="forklaring" id="forklaring"></div>
       <div class="sb" id="viktig"></div>
-      <!-- Test: Vimeo video, autoplay + loop (muted – browsers only autoplay without sound) -->
-      <div class="vimeo"><iframe src="https://player.vimeo.com/video/5157892?autoplay=1&amp;loop=1&amp;muted=1&amp;autopause=0&amp;title=0&amp;byline=0&amp;portrait=0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="Video"></iframe></div>
       <div class="status" id="status"></div>
     </aside>
     <svg class="pil" id="pil" viewBox="0 0 120 56" aria-hidden="true">
