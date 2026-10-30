@@ -3,6 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Calendar">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Calendar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -77,6 +81,24 @@
   .rad.forbi { opacity: 0.3; }
 
   /* Red paper arrow pointing at today */
+  .ukedag .kort { display: none; }
+
+  /* ---------- Phone layout (narrow screens, e.g. iPhone) ---------- */
+  html.mobil #flate { padding: env(safe-area-inset-top) 0 0 0; }
+  html.mobil .tavle { display: flex; flex-direction: column; border-width: 0.25rem; border-radius: 0; padding: 0.6rem 0.5rem 1.2rem; }
+  html.mobil .tavle > div:empty, html.mobil .pil, html.mobil .klokke, html.mobil #chefsBoks, html.mobil #logovideoBoks { display: none !important; }
+  html.mobil aside { order: 2; margin-top: 1.6rem; padding-left: 0; gap: 1.2rem; overflow: visible; }
+  html.mobil .rad { grid-template-columns: 3.3rem 2.3rem minmax(0, 1fr); min-height: 2.7rem; }
+  html.mobil .ukedag { font-size: 0.95rem; }
+  html.mobil .ukedag .lang { display: none; }
+  html.mobil .ukedag .kort { display: inline; }
+  html.mobil .nr { font-size: 1.2rem; }
+  html.mobil .side { grid-column: 3; align-items: flex-start; text-align: left; max-width: none; padding-top: 0 !important; padding-bottom: 0.3rem !important; }
+  html.mobil .ooo { align-items: flex-start; }
+  html.mobil .h { font-size: 0.95rem; }
+  html.mobil .status { margin-top: 0; }
+  html.mobil .rad.idag { background: rgba(217,58,43,0.08); box-shadow: inset 5px 0 0 var(--rod); }
+
   .pil { position: absolute; left: 0; width: 2.6rem; height: 1.4rem; transform: translateY(-50%); pointer-events: none; display: none; z-index: 2; }
 
   /* ---------- Right column ---------- */
@@ -128,7 +150,7 @@
       <div class="sb" id="viktig"></div>
       <div class="status" id="status"></div>
       <div class="bildeboks" id="chefsBoks"><img id="chefs" src="chefs.jpg" alt=""></div>
-      <div class="logovideo" id="logovideoBoks"><video id="vakt" src="logo.mp4" muted playsinline loop autoplay preload="auto"></video></div>
+      <div class="logovideo" id="logovideoBoks"><video id="vakt" muted playsinline loop autoplay preload="auto"></video></div>
     </aside>
     <svg class="pil" id="pil" viewBox="0 0 120 56" aria-hidden="true">
       <path d="M4 28 L40 4 L40 17 L114 17 L114 39 L40 39 L40 52 Z" fill="#fff" stroke="#d93a2b" stroke-width="5" stroke-linejoin="round"/>
@@ -254,7 +276,7 @@
       const uke = '';
       const mnd = (d.getUTCDate() === 1 || n === 0) ? `<span class="mnd">${MND_KORT[d.getUTCMonth()]}</span>` : '';
       html += `<div class="${kl.join(' ')}" data-dag="${dag}">
-        <div class="ukedag">${UKEDAG[wd]}</div>
+        <div class="ukedag"><span class="lang">${UKEDAG[wd]}</span><span class="kort">${UKEDAG[wd].slice(0, 3)}</span></div>
         <div class="nr">${uke}${d.getUTCDate()}${mnd}</div>
         <div class="innh">${vanlige.map(hendelse).join('')}</div>
         <div class="side">${ooo.map(oooTekst).join('')}</div>
@@ -351,12 +373,22 @@
   // Fit everything on screen, then place the red arrow at today's row
   // Fit everything on one screen (the portrait wall screen). If that would make the
   // text too small – e.g. a landscape or small browser window – switch to scrolling.
+  // Phone = narrow screen (or &mobil=1). The wall TV uses &roter=1 and never counts as a phone.
+  function erMobil() {
+    if (p.get('mobil') === '1') return true;
+    if (p.get('mobil') === '0' || document.body.classList.contains('roter')) return false;
+    return Math.min(window.innerWidth, screen.width || 9999) < 700;
+  }
   const MIN_LESBAR = 16;   // px: smallest text size before we switch to scrolling
   function tilpass() {
     const el = $('liste'), root = document.documentElement;
     const aside = document.querySelector('aside');
     const roter = document.body.classList.contains('roter');
     root.classList.remove('rull');
+    // Phone (narrow screen): one scrolling column with fixed, readable text
+    const mobil = erMobil();
+    root.classList.toggle('mobil', mobil);
+    if (mobil) { root.classList.add('rull'); root.style.fontSize = '16px'; plasserPil(); return; }
     let fs = Math.min(30, $('flate').offsetWidth / 40);
     root.style.fontSize = fs + 'px';
     const forMye = () => el.scrollHeight > el.clientHeight + 1 || aside.scrollHeight > aside.clientHeight + 1 ||
@@ -372,7 +404,7 @@
 
   function plasserPil() {
     const pil = $('pil'), rad = document.querySelector('.rad.idag'), main = $('liste');
-    if (!rad) { pil.style.display = 'none'; return; }
+    if (!rad || document.documentElement.classList.contains('mobil')) { pil.style.display = 'none'; return; }
     pil.style.display = 'block';
     pil.style.left = (main.offsetLeft + main.offsetWidth + 2) + 'px';
     pil.style.top = (rad.offsetTop + rad.offsetHeight / 2) + 'px';
@@ -496,11 +528,15 @@
   // LG TVs start their own clock/screensaver when nothing plays. logo.mp4 (in the GitHub repo,
   // next to index.html) loops under IMPORTANT DATES to keep the TV awake.
   //   &vakt=0  → no video        &lyd=1 → play with sound on (after the first OK/click)
-  $('chefs').addEventListener('error', () => { $('chefsBoks').style.display = 'none'; tilpass(); });
+  // On a phone: skip the picture and the logo video (saves data and battery)
+  if (erMobil()) { $('chefsBoks').remove(); $('logovideoBoks').remove(); }
+  if ($('chefs')) $('chefs').addEventListener('error', () => { $('chefsBoks').style.display = 'none'; tilpass(); });
   const vakt = $('vakt'), vaktBoks = $('logovideoBoks');
-  if (p.get('vakt') === '0') vaktBoks.remove();
+  if (!vakt) { /* phone: no video */ }
+  else if (p.get('vakt') === '0') vaktBoks.remove();
   else {
     vakt.addEventListener('error', () => { vaktBoks.style.display = 'none'; tilpass(); });
+    vakt.src = 'logo.mp4';   // set here (not in the HTML) so phones never download it
     const spill = () => { if (vakt.paused) { const r = vakt.play(); if (r && r.catch) r.catch(() => {}); } };
     const lydPaa = () => { if (p.get('lyd') === '1' && vakt.muted) { vakt.muted = false; vakt.volume = 1; spill(); } };
     spill(); setInterval(spill, 15000);
