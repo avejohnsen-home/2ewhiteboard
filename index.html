@@ -99,13 +99,17 @@
   .vk-liste { border-top: 2px solid var(--strek); border-left: 2px solid var(--strek); border-right: 2px solid var(--strek); }
   .vk-rad { border-bottom: 2px solid var(--strek); padding: 0.3rem 0.4rem; font-size: 0.88rem; line-height: 1.2; overflow-wrap: anywhere; }
   .vk-tom { padding: 0.3rem 0.4rem; font-size: 0.75rem; color: var(--dempet); border-bottom: 2px solid var(--strek); }
-  .logovideo { width: 100%; aspect-ratio: 16 / 9; flex-shrink: 0; background: #000; border: 2px solid var(--strek); overflow: hidden; }
+  /* Picture (chefs.jpg) fills the free space; the logo video sits at the very bottom. No frames. */
+  .bildeboks { flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; }
+  .bildeboks img { max-width: 100%; max-height: 100%; width: auto; height: auto; display: block; object-fit: contain; }
+  html.rull .bildeboks img { max-height: none; width: 100%; }
+  .logovideo { width: 100%; aspect-ratio: 16 / 9; flex-shrink: 0; margin-top: auto; overflow: hidden; }
   .logovideo video { width: 100%; height: 100%; object-fit: cover; display: block; }
   .forklaring { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.75rem; }
   .forklaring span { display: flex; align-items: center; gap: 0.4rem; text-transform: uppercase; letter-spacing: 0.04em; }
   .forklaring i { width: 1.1rem; height: 0.5rem; border-radius: 0.1rem; display: inline-block; }
 
-  .status { margin-top: auto; font-size: 0.5rem; color: var(--dempet); }
+  .status { margin-top: -0.6rem; font-size: 0.5rem; color: var(--dempet); }
   .status.feil { color: var(--rod); font-size: 0.7rem; }
 
   .oppsett { margin: auto; padding: 2rem; line-height: 1.6; background: #fff; }
@@ -122,8 +126,9 @@
       <div class="sb" id="standby"></div>
       <div class="forklaring" id="forklaring"></div>
       <div class="sb" id="viktig"></div>
-      <div class="logovideo" id="logovideoBoks"><video id="vakt" src="logo.mp4" muted playsinline loop autoplay preload="auto"></video></div>
       <div class="status" id="status"></div>
+      <div class="bildeboks" id="chefsBoks"><img id="chefs" src="chefs.jpg" alt=""></div>
+      <div class="logovideo" id="logovideoBoks"><video id="vakt" src="logo.mp4" muted playsinline loop autoplay preload="auto"></video></div>
     </aside>
     <svg class="pil" id="pil" viewBox="0 0 120 56" aria-hidden="true">
       <path d="M4 28 L40 4 L40 17 L114 17 L114 39 L40 39 L40 52 Z" fill="#fff" stroke="#d93a2b" stroke-width="5" stroke-linejoin="round"/>
@@ -491,6 +496,7 @@
   // LG TVs start their own clock/screensaver when nothing plays. logo.mp4 (in the GitHub repo,
   // next to index.html) loops under IMPORTANT DATES to keep the TV awake.
   //   &vakt=0  → no video        &lyd=1 → play with sound on (after the first OK/click)
+  $('chefs').addEventListener('error', () => { $('chefsBoks').style.display = 'none'; tilpass(); });
   const vakt = $('vakt'), vaktBoks = $('logovideoBoks');
   if (p.get('vakt') === '0') vaktBoks.remove();
   else {
