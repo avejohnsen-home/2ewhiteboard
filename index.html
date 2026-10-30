@@ -26,8 +26,6 @@
   body { color: var(--tekst); font-family: var(--hand); }
   body.skjul-mus, body.skjul-mus * { cursor: none; }
   /* Tiny silent video playing in the background so the TV doesn't start its own screensaver */
-  #fsHint { position: fixed; left: 50%; bottom: 2rem; transform: translateX(-50%); z-index: 60; background: var(--rod); color: #fff; font-family: var(--marker); font-size: 1.1rem; padding: 0.6rem 1.2rem; border-radius: 0.5rem; box-shadow: 0 0.3rem 1rem rgba(0,0,0,0.3); display: none; white-space: nowrap; }
-  body.fs-modus:not(.fs-aktiv) #fsHint { display: block; }
   #vakt { position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1; opacity: 0.01; pointer-events: none; }
 
   /* Pause screen (screensaver) */
@@ -119,7 +117,6 @@
 <body>
 <video id="vakt" muted playsinline loop autoplay preload="auto" aria-hidden="true" src="data:video/mp4;base64,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"></video>
 <div id="flate">
-  <div id="fsHint">Press OK / click to start full screen</div>
   <div class="tavle" id="tavle">
     <main id="liste"></main>
     <div></div>
@@ -509,27 +506,8 @@
   hentData(); setInterval(hentData, OPPDATER_SEK * 1000);
   window.addEventListener('resize', tilpass);
   if (document.fonts) document.fonts.ready.then(tilpass);
-  // Full screen (&fs=1): the TV may skip its screensaver while something plays in full screen.
-  // Browsers only allow full screen after a click/OK press, so a red hint is shown until then.
-  const fsModus = p.get('fs') === '1';
-  if (fsModus) {
-    document.body.classList.add('fs-modus');
-    const iFull = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
-    const startFull = () => {
-      if (iFull()) return;
-      const el = document.documentElement;
-      const f = el.requestFullscreen || el.webkitRequestFullscreen;
-      if (f) { const r = f.call(el); if (r && r.catch) r.catch(() => {}); }
-      const v = document.getElementById('vakt'); if (v && v.paused) v.play().catch(() => {});
-    };
-    const oppdaterFs = () => { document.body.classList.toggle('fs-aktiv', iFull()); setTimeout(tilpass, 300); };
-    ['click', 'keydown'].forEach(e => window.addEventListener(e, startFull));
-    document.addEventListener('fullscreenchange', oppdaterFs);
-    document.addEventListener('webkitfullscreenchange', oppdaterFs);
-  }
-
-  // Reload at 04:00 to pick up new versions (not in full screen mode – that would leave full screen)
-  setInterval(() => { if (osloNa().tid === '04:00' && !fsModus) location.reload(); }, 60 * 1000);
+  // Reload at 04:00 to pick up new versions
+  setInterval(() => { if (osloNa().tid === '04:00') location.reload(); }, 60 * 1000);
 })();
 </script>
 </body>
