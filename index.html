@@ -64,7 +64,9 @@
   .ukedag { font-family: var(--marker); font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.02em; display: flex; align-items: center; border-right: 2px solid var(--strek); }
   .rad.helg .ukedag { color: var(--rod); }
   .nr { font-family: var(--marker); font-size: 1.35rem; display: flex; align-items: center; justify-content: center; border-right: 2px solid var(--strek); position: relative; padding-top: 0.45rem !important; }
-  .nr .mnd { position: absolute; bottom: 0.05rem; right: 0.2rem; font-family: var(--hand); font-weight: 700; font-size: 0.5rem; color: var(--teal); }
+  .nr .teamstrek { position: absolute; left: 0.2rem; right: 0.2rem; bottom: 0.15rem; height: 0.32rem; border-radius: 0.05rem; }
+  .forklaring i.team { height: 0.32rem; }
+  .nr .mnd { position: absolute; top: 0.1rem; right: 0.2rem; font-family: var(--hand); font-weight: 700; font-size: 0.5rem; color: var(--teal); }
   .nr .uke { position: absolute; top: 0.05rem; left: 0.2rem; font-family: var(--hand); font-weight: 700; font-size: 0.5rem; color: var(--teal); white-space: nowrap; }
   .innh { display: flex; flex-direction: column; justify-content: center; gap: 0.05rem; overflow: hidden; }
   .side { display: flex; flex-direction: column; justify-content: center; align-items: flex-end; gap: 0.25rem; text-align: right; max-width: 7.5rem; }
@@ -151,7 +153,6 @@
       <div class="sb" id="standby"></div>
       <div class="forklaring" id="forklaring"></div>
       <div class="sb" id="viktig"></div>
-      <div class="sb" id="away"></div>
       <div class="status" id="status"></div>
       <div class="bildeboks" id="chefsBoks"><img id="chefs" src="chefs.jpg" alt=""></div>
       <div class="logovideo" id="logovideoBoks"><video id="vakt" muted playsinline loop autoplay preload="auto"></video></div>
@@ -184,9 +185,6 @@
   const STANDBY_MONSTER = /^\s*standby\b/i;
   // Important dates: the description of the event called «Important dates»
   const VIKTIG_MONSTER = /^\s*important\s+dates\s*$/i;
-  // Away days: all-day events (any calendar) whose title starts with "Away", e.g. "Away - Robin on FA"
-  const AWAY_MONSTER = /^\s*away\b/i;
-  const AWAY_MAKS = 8;   // max rows shown
   // Out of office: events (any calendar) whose title starts with "Out of office"
   // Shown next to the day (any calendar): title prefix → label written above the name
   const SIDENOTATER = [
@@ -243,7 +241,6 @@
   function kalNavn(i) { return (data.kalendere[i] || {}).navn || ''; }
   function farge(i) { return FARGER[kalNavn(i)] || '#555'; }
   function erStandby(h) { return kalNavn(h.kal) === STANDBY_KALENDER && STANDBY_MONSTER.test(h.tittel); }
-  function erAway(h) { return AWAY_MONSTER.test(h.tittel); }
   function sideType(h) { return SIDENOTATER.find(t => t.monster.test(h.tittel)); }
   function erOOO(h) { return !!sideType(h); }
 
@@ -253,7 +250,7 @@
 
     const perDag = {};
     data.hendelser.forEach(h => {
-      if (erStandby(h) || erAway(h) || VIKTIG_MONSTER.test(h.tittel)) return;
+      if (erStandby(h) || VIKTIG_MONSTER.test(h.tittel)) return;
       let s = h.fraDato < start ? start : h.fraDato;
       const t = h.tilDato > slutt ? slutt : h.tilDato;
       while (s <= t) {
@@ -263,7 +260,8 @@
     });
 
     $('forklaring').innerHTML = data.kalendere.map((k, i) =>
-      `<span><i style="background:${farge(i)}"></i>${esc(k.navn)}</span>`).join('');
+      `<span><i style="background:${farge(i)}"></i>${esc(k.navn)}</span>`).join('') +
+      (teamData ? Object.keys(teamData.farger).map(t => `<span><i class="team" style="background:${teamData.farger[t]}"></i>Team ${esc(t)}</span>`).join('') : '');
 
     let html = '';
     for (let n = 0; n < 28; n++) {
@@ -285,7 +283,7 @@
       const mnd = (d.getUTCDate() === 1 || n === 0) ? `<span class="mnd">${MND_KORT[d.getUTCMonth()]}</span>` : '';
       html += `<div class="${kl.join(' ')}" data-dag="${dag}">
         <div class="ukedag"><span class="lang">${UKEDAG[wd]}</span><span class="kort">${UKEDAG[wd].slice(0, 3)}</span></div>
-        <div class="nr">${uke}${d.getUTCDate()}${mnd}</div>
+        <div class="nr">${uke}${d.getUTCDate()}${mnd}${teamStrek(dag)}</div>
         <div class="innh">${vanlige.map(hendelse).join('')}</div>
         <div class="side">${ooo.map(oooTekst).join('')}</div>
       </div>`;
@@ -293,7 +291,6 @@
     $('liste').innerHTML = html;
     tegnStandby();
     tegnViktig();
-    tegnAway();
     tilpass();
   }
 
@@ -373,29 +370,6 @@
     return ren.split(/\r?\n/).map(l => l.replace(/^\s*[-•*·]\s*/, '').trim()).filter(Boolean);
   }
 
-  // ---- Away days (holidays / longer absences), current and upcoming ----
-  function awayListe() {
-    if (Array.isArray(data.away)) return data.away.map(a => ({ navn: a.navn != null ? a.navn : utenPrefiks(a.tittel || '', AWAY_MONSTER), fraDato: a.fraDato, tilDato: a.tilDato }));
-    return data.hendelser.filter(erAway).map(h => ({ navn: utenPrefiks(h.tittel, AWAY_MONSTER), fraDato: h.fraDato, tilDato: h.tilDato }));
-  }
-  function periodeTekst(s) {
-    const a = s2d(s.fraDato), b = s2d(s.tilDato), ma = MND_KORT[a.getUTCMonth()], mb = MND_KORT[b.getUTCMonth()];
-    if (s.fraDato === s.tilDato) return `${a.getUTCDate()} ${ma}`;
-    if (ma === mb) return `${a.getUTCDate()}–${b.getUTCDate()} ${ma}`;
-    return `${a.getUTCDate()} ${ma} – ${b.getUTCDate()} ${mb}`;
-  }
-  function tegnAway() {
-    const idag = data.idag, slatt = [];
-    awayListe().filter(s => s.tilDato >= idag).sort((a, b) => a.fraDato.localeCompare(b.fraDato)).forEach(s => {
-      const f = slatt.find(x => x.navn.toLowerCase() === s.navn.toLowerCase() && s.fraDato <= pluss(x.tilDato, 1) && s.tilDato >= pluss(x.fraDato, -1));
-      if (f) { if (s.fraDato < f.fraDato) f.fraDato = s.fraDato; if (s.tilDato > f.tilDato) f.tilDato = s.tilDato; }
-      else slatt.push({ ...s });
-    });
-    const rader = slatt.slice(0, AWAY_MAKS).map(s =>
-      `<div class="sb-rad${s.fraDato <= idag ? ' na' : ''}"><span class="d">${periodeTekst(s)}</span><span class="n">${esc(s.navn || '?')}</span></div>`).join('');
-    $('away').innerHTML = `<h2>AWAY DAYS</h2><div class="vk-liste">${rader || '<div class="vk-tom">—</div>'}</div>`;
-  }
-
   function dagerTekst(s) {
     const dager = [];
     for (let d = s.fraDato; d <= s.tilDato && dager.length < 32; d = pluss(d, 1)) dager.push(s2d(d).getUTCDate());
@@ -443,6 +417,25 @@
   }
 
   // ---- Fetching ----
+  // ---- Show teams on Color Fantasy (teams.json in the GitHub repo) ----
+  // A coloured line under the date shows which team (Emerald / Gold) is on board.
+  let teamData = null;
+  async function hentTeams() {
+    try {
+      const r = await fetch('teams.json?t=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) throw new Error(r.status);
+      teamData = await r.json();
+      if (data) tegn();
+    } catch (e) { /* no teams.json – just show no lines */ }
+  }
+  function teamStrek(dag) {
+    if (!teamData) return '';
+    const p = teamData.perioder.find(x => x.fra <= dag && dag <= x.til);
+    if (!p) return '';
+    const f = teamData.farger[p.team] || '#888';
+    return `<span class="teamstrek" style="background:${f}" title="Team ${esc(p.team)}"></span>`;
+  }
+
   async function hentData() {
     try {
       if (demo) data = demoData();
@@ -464,6 +457,12 @@
     }
   }
 
+  if (demo) {   // sample team lines for the preview
+    const m0 = mandag(osloNa().dato);
+    teamData = { farger: { Emerald: '#3f6f1f', Gold: '#d4a017' }, perioder: [
+      { team: 'Gold', fra: pluss(m0, -3), til: pluss(m0, 1) }, { team: 'Emerald', fra: pluss(m0, 2), til: pluss(m0, 11) },
+      { team: 'Gold', fra: pluss(m0, 12), til: pluss(m0, 21) }, { team: 'Emerald', fra: pluss(m0, 22), til: pluss(m0, 31) } ] };
+  }
   function demoData() {
     const m = mandag(osloNa().dato);
     const kal = [{ navn: 'Office' }, { navn: 'Fantasy' }, { navn: 'Family Entertainment' }, { navn: 'GoNordic' }];
@@ -482,7 +481,7 @@
       H(14, 3, 'Rehearsal start 27 – Adrian Crown', '11:00', '15:00'), H(15, 0, 'Results meeting', '14:00', '15:00'),
       H(17, 0, 'Ave haircut', '', '', true), H(18, 0, 'Waffle Friday ♡', '12:00', '13:00'),
       H(20, 2, 'Fam. Ent. music draft', '', '', true), H(24, 0, 'Deadline salaries', '', '', true),
-      H(25, 0, 'Out of Office - LS office 10:30', '10:30', '16:00'), H(2, 0, 'Home Office - Robin', '', '', true), H(4, 2, 'Home Office - Adrian', '08:00', '16:00'), H(3, 0, 'OFF - Ave', '', '', true), H(16, 0, 'Away - Robin on FA', '', '', true, 8), H(1, 0, 'Away - Linda holiday', '', '', true, 3)
+      H(25, 0, 'Out of Office - LS office 10:30', '10:30', '16:00'), H(2, 0, 'Home Office - Robin', '', '', true), H(4, 2, 'Home Office - Adrian', '08:00', '16:00'), H(3, 0, 'OFF - Ave', '', '', true)
     ] };
   }
 
@@ -578,6 +577,7 @@
 
   tikk(); setInterval(tikk, 1000);
   hentData(); setInterval(hentData, OPPDATER_SEK * 1000);
+  if (!demo) { hentTeams(); setInterval(hentTeams, 30 * 60 * 1000); }
   window.addEventListener('resize', tilpass);
   if (document.fonts) document.fonts.ready.then(tilpass);
   // Reload at 04:00 to pick up new versions
