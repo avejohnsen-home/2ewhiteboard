@@ -395,7 +395,7 @@
     });
     const rader = slatt.slice(0, AWAY_MAKS).map(s =>
       `<div class="sb-rad${s.fraDato <= idag ? ' na' : ''}"><span class="d">${periodeTekst(s)}</span><span class="n">${esc(s.navn || '?')}</span></div>`).join('');
-    $('away').innerHTML = `<h2>AWAY DAYS</h2><div class="vk-liste">${rader || '<div class="vk-tom">—</div>'}</div>`;
+    $('away').innerHTML = `<h2>AWAY-DAYS</h2><div class="vk-liste">${rader || '<div class="vk-tom">—</div>'}</div>`;
   }
 
   function dagerTekst(s) {
